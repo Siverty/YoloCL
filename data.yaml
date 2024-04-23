@@ -1,0 +1,13 @@
+#train: C:\Users\Gebruiker\Downloads\myvenv\data\v3.2\train
+#val: C:\Users\Gebruiker\Downloads\myvenv\data\v3.2\val
+#test: C:\Users\Gebruiker\Downloads\myvenv\data\v3.2\test
+
+nc: 14
+names: ['Bak', 'Bloembak', 'Buis', 'CD-DVD hoes', 'Emmer', 'Gieter', 'Jerrycan', 'Kabel', 'Klerenhanger', 'Kozijn', 'Krat', 'Lp plaat', 'Tuinstoel', 'Vat']
+
+roboflow:
+  workspace: chill
+  project: chill-hgrdy
+  version: 7
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/chill/chill-hgrdy/dataset/7
