@@ -1,39 +1,33 @@
-# Description: This script redistributes the dataset into train and validation sets.
-
 import os
 import shutil
+import random
 
-# Define the source directories
-source_dirs = ['case1', 'case2', 'case3']
+input_dir = "input"
 
-# Define the destination directories
-dest_dirs = {
-    'train_images': 'output/train/images',
-    'train_labels': 'output/train/labels',
-    'validation_images': 'output/validation/images',
-    'validation_labels': 'output/validation/labels'
-}
+for case_folder in os.listdir(input_dir):
+    case_path = os.path.join(input_dir, case_folder)
+    output_dir = os.path.join("output", case_folder)
 
-# Define the image file extensions
-image_extensions = ['.jpg', '.jpeg', '.png', '.bmp']
+    os.makedirs(os.path.join(output_dir, "train", "image"), exist_ok=True)
+    os.makedirs(os.path.join(output_dir, "train", "label"), exist_ok=True)
+    os.makedirs(os.path.join(output_dir, "valid", "image"), exist_ok=True)
+    os.makedirs(os.path.join(output_dir, "valid", "label"), exist_ok=True)
 
-# Iterate over the source directories
-for source_dir in source_dirs:
-    for filename in os.listdir(source_dir):
-        # Get the file extension
-        _, file_extension = os.path.splitext(filename)
+    files = os.listdir(case_path)
+    random.shuffle(files)
+    split_index = int(0.7 * len(files))  # 70% for training, 30% for validation
 
-        # Check if the file is an image
-        if file_extension in image_extensions:
-            # If it's an image, move it to the images directories
-            if 'train' in source_dir:
-                shutil.move(os.path.join(source_dir, filename), os.path.join(dest_dirs['train_images'], filename))
-            else:
-                shutil.move(os.path.join(source_dir, filename), os.path.join(dest_dirs['validation_images'], filename))
-        elif file_extension == '.txt':
-            # If it's a label, move it to the labels directories
-            if 'train' in source_dir:
-                shutil.move(os.path.join(source_dir, filename), os.path.join(dest_dirs['train_labels'], filename))
-            else:
-                shutil.move(os.path.join(source_dir, filename), os.path.join(dest_dirs['validation_labels'], filename))
+    train_files = files[:split_index]
+    valid_files = files[split_index:]
 
+    for file in train_files:
+        if file.endswith(".jpg"):
+            shutil.move(os.path.join(case_path, file), os.path.join(output_dir, "train", "image", file))
+        elif file.endswith(".txt"):
+            shutil.move(os.path.join(case_path, file), os.path.join(output_dir, "train", "label", file))
+
+    for file in valid_files:
+        if file.endswith(".jpg"):
+            shutil.move(os.path.join(case_path, file), os.path.join(output_dir, "valid", "image", file))
+        elif file.endswith(".txt"):
+            shutil.move(os.path.join(case_path, file), os.path.join(output_dir, "valid", "label", file))
