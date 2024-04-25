@@ -15,8 +15,9 @@ import os
 
 def install_requirements(requirements_file):
     """
-    Install required packages listed in the requirements.txt file.
+    Install required packages listed in the requirements.txt file, and upgrade pip.
     """
+    os.system('python -m pip install --upgrade pip')
     with open(requirements_file, 'r') as file:
         requirements = file.readlines()
         for req in requirements:

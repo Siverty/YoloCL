@@ -1,7 +1,6 @@
 # Description: This script is used to extract and split the data into training and validation sets.
 
 import os
-from sklearn.model_selection import train_test_split
 
 
 def split_data(input_data, prepared_data, train_ratio):
@@ -13,6 +12,7 @@ def split_data(input_data, prepared_data, train_ratio):
     - prepared_data (str): Path to the directory where prepared data will be stored.
     - train_ratio (float): Ratio of training data to total data.
     """
+    from sklearn.model_selection import train_test_split
 
     def gather_files(case_path):
         """
@@ -25,6 +25,7 @@ def split_data(input_data, prepared_data, train_ratio):
         - image_files (list): List of paths to image files.
         - label_files (list): List of paths to label files.
         """
+
         image_files, label_files = [], []
         for root, dirs, files in os.walk(case_path):
             for file in files:
@@ -42,6 +43,7 @@ def split_data(input_data, prepared_data, train_ratio):
         - files (list): List of paths to files to be linked.
         - dest_dir (str): Path to the destination directory.
         """
+
         os.makedirs(dest_dir, exist_ok=True)
         for file_path in files:
             target_path = os.path.join(dest_dir, os.path.basename(file_path))

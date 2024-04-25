@@ -1,7 +1,5 @@
 # Description: This file contains the logic for continuing training a YOLO model.
 
-from ultralytics import YOLO
-import torch
 import os
 
 
@@ -17,14 +15,20 @@ def continue_training(weights, model_specifics, image_size, batch_size, epochs, 
     - epochs (int): Number of epochs for training.
     - checkpoint (int): Save model after this number of epochs.
     """
+    from ultralytics import YOLO
+    import torch
+
     # Load the existing model
-    model = YOLO(weights)
+    model = YOLO(weights, task='train')
 
     # Use the GPU if available, otherwise default to CPU
-    use_gpu = '0' if torch.cuda.is_available() else ''
+    gpu_preference = '0' if torch.cuda.is_available() else ''
+
+    if gpu_preference != '0':
+        print('ATTENTION: GPU not available. Training on CPU.')
 
     # Train the model
-    model.train(data=model_specifics, epochs=epochs, device=use_gpu,
+    model.train(data=model_specifics, epochs=epochs, device=gpu_preference,
                 imgsz=image_size, batch=batch_size, save_period=checkpoint)
 
     # Save the trained model

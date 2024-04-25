@@ -1,8 +1,6 @@
 # Description: Test the predictive performance of old and new YOLO models on a test dataset.
 
-from ultralytics import YOLO
-import pandas as pd
-from datetime import datetime
+import os
 
 
 def cl_model_test(test_path, cl_weights, old_weights):
@@ -18,6 +16,10 @@ def cl_model_test(test_path, cl_weights, old_weights):
     - df_old (DataFrame): Results of testing the old model.
     - df_new (DataFrame): Results of testing the new model.
     """
+    from ultralytics import YOLO
+    import pandas as pd
+    from datetime import datetime
+
     # Load the old model
     old_model = YOLO(old_weights)
 
