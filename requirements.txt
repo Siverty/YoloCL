@@ -1,3 +1,5 @@
-scikit-learn
+pandas
 ultralytics
-torch
+numpy
+torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+scikit-learn
