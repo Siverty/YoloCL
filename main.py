@@ -17,7 +17,7 @@ def install_requirements(requirements_file):
 def main():
 
     from logic.data_handler.trainValSplit import split_data
-    from logic.cl_yolo import continue_training
+    from logic.cl_yolo_train import continue_training
 
     # Define the root path of the input directory for YOLO data
     yolo_input_root = os.path.join(os.getcwd(), 'yolo_input')
@@ -34,12 +34,7 @@ def main():
     # Set the path to the data configuration file
     data_yaml = 'datasets/data-chimp.yaml'
 
-    # You can adjust these parameters as needed
-    img_size = 640
-    batch_size = 16
-    epochs = 50
-
-    continue_training(weights_path, data_yaml, img_size, batch_size, epochs)
+    continue_training(weights_path, data_yaml, 640, 16, 1, 0)
 
 
 if __name__ == "__main__":
