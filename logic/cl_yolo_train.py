@@ -44,3 +44,5 @@ def continue_training(weights, model_specifics, image_size, batch_size, epochs, 
 
     # Save the model as 'best_x.pt' in /models/continue_training
     model.save(f"{save_dir}/best_{new_model_name}.pt")
+
+    print(f"Model saved as best_{new_model_name}.pt in {save_dir}  \n As best_{new_model_name}.pt")
