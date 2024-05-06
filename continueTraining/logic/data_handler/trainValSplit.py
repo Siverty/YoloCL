@@ -54,7 +54,7 @@ def split_data(input_data, prepared_data, train_ratio):
     # Iterate over each case in the input root
     for case_dir in os.listdir(input_data):
         full_case_path = os.path.join(input_data, case_dir)
-        if os.path.isdir(full_case_path):  # Make sure it's a directory
+        if os.path.isdir(full_case_path):
             image_files, label_files = gather_files(full_case_path)
 
             # Ensure the images and labels have a one-to-one correspondence
