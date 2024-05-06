@@ -84,11 +84,11 @@ def train():
         # If the continue_training directory has files, use the last modified file as the weights path
         weights_path = max([os.path.join(weights_path_continue_training, f) for f in os.listdir(
             weights_path_continue_training)], key=os.path.getmtime)
-        print(f"Using weights from {weights_path}, so will train with this already further trained model.")
+        print(f"Using weights from {weights_path}, so will train with this already further trained model.⏭")
     else:
         # If the directory is empty, use best.pt in the main models directory
         weights_path = os.path.join(weights_path_best, 'best.pt')
-        print(f"Using weights from {weights_path}, so it will train with the initially provided model.")
+        print(f"Using weights from {weights_path}, so it will train with the initially provided model.▶️")
 
     # Set the path to the data configuration file
     data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
@@ -96,7 +96,7 @@ def train():
     current_experiment = experiment_name
 
     # Continue training the model
-    continue_training(weights_path, data_yaml, 640, 16, 1, 0, current_experiment)
+    continue_training(weights_path, data_yaml, 640, 16, 50, 0, current_experiment)
 
 
 if __name__ == "__main__":
