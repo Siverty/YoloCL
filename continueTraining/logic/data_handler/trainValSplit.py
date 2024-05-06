@@ -3,7 +3,7 @@
 import os
 
 
-def split_data(input_data, prepared_data, train_ratio):
+def split_data(input_data: str, prepared_data: str, train_ratio: float):
     """
     Split data into training and validation sets.
 
@@ -14,7 +14,7 @@ def split_data(input_data, prepared_data, train_ratio):
     """
     from sklearn.model_selection import train_test_split
 
-    def gather_files(case_path):
+    def gather_files(case_path: str):
         """
         Gather image and label files from a case directory.
 
@@ -35,7 +35,7 @@ def split_data(input_data, prepared_data, train_ratio):
                     label_files.append(os.path.join(root, file))
         return image_files, label_files
 
-    def link_files(files, dest_dir):
+    def link_files(files: str, dest_dir: str):
         """
         Link files to the destination directory.
 

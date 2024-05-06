@@ -3,7 +3,7 @@
 import os
 
 
-def cl_model_test(test_path, cl_weights, old_weights):
+def cl_model_test(test_path: str, cl_weights: str, old_weights: str):
     """
     Test the performance of old and new YOLO models on a test dataset.
 
