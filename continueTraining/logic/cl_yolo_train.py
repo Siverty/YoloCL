@@ -29,12 +29,16 @@ def continue_training(weights: str, model_specifics: str, image_size: int, batch
     num_runs = len(existing_runs)
     name = f"{new_name}_{num_runs + 1}"
 
+    # get the desired parameters
+    desired_weight = weights.split("models\\", 1)[-1]
+    desired_yaml = "CHILL\\" + model_specifics.split("CHILL\\", 1)[-1] if "CHILL\\" in model_specifics else ""
+
     # Start a mlflow run with a custom run name
     with mlflow.start_run(experiment_id=experiment_id, run_name=name):
         # Log parameters
         mlflow.log_params({
-            "weights": weights,
-            "model_specifics": model_specifics,
+            "weights": desired_weight,
+            "yaml_file": desired_yaml,
             "image_size": image_size,
             "batch_size": batch_size,
             "epochs": epochs,
