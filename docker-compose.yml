@@ -1,0 +1,14 @@
+version: '3'
+services:
+  mlflow-server:
+    build:
+      context: ./mlflow
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+  app:
+    build: ./app
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow-server:5000
+    depends_on:
+      - mlflow-server
