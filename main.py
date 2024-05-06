@@ -4,13 +4,17 @@
 # Be sure to run this script in a .venv environment with the required packages installed.
 # The pytorch && CUDA installations will otherwise throw exotics errors.
 
-# ToDos:
+# TODO:
 # 1. add testing capabilities
 # 2. add logging
 # 3. add parameters for continual learning
-# 4. -------------------------------------
+# 4. run directory add
 
 import os
+
+# Select what project to use (TODO: needs to be a parameter)
+project = 'CHILL'
+experiment_name = project + '_cl'
 
 
 def install_requirements(requirements_file):
@@ -24,37 +28,78 @@ def install_requirements(requirements_file):
             req = req.strip()  # Remove leading/trailing whitespace
             if req.startswith('#'):
                 continue  # Skip comments
-            os.system(f'pip install {req}')
+            os.system(f'pip install --no-cache {req}')
+
+
+def split_data():
+    """
+    Split the raw data into training and validation sets.
+    """
+    from continueTraining.logic.data_handler.trainValSplit import split_data
+
+    # Define the root path of the input directory for YOLO data
+    yolo_input_root = os.path.join(os.getcwd(), 'data', project, 'yolo_input')
+
+    # Define the path to save the train and validation sets
+    train_val_root = os.path.join(os.getcwd(), 'data', project, 'cl_data')
+
+    # Split the data into training and validation sets directly from the input
+    split_data(yolo_input_root, train_val_root, 0.7)
+
+
+def create_mlflow_experiment():
+    """
+    Create a new MLFlow experiment if it does not exist.
+    """
+    import mlflow
+
+    # Set MLFlow tracking URI
+    mlflow.set_tracking_uri('http://localhost:5000')
+
+    # Check if the experiment exists
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+
+    # Create the experiment if it does not exist
+    if experiment is None:
+        mlflow.create_experiment(experiment_name)
+        print(f"Experiment '{experiment_name}' created.")
+    else:
+        print(f"Experiment '{experiment_name}' already exists.\nContinuing training...")
 
 
 def train():
     """
     Function to execute the training process on existing weights.
     """
-    from logic.data_handler.trainValSplit import split_data
-    from logic.cl_yolo_train import continue_training
-
-    # Define the root path of the input directory for YOLO data
-    yolo_input_root = os.path.join(os.getcwd(), 'yolo_input')
-
-    # Define the path to save the train and validation sets
-    train_val_root = os.path.join(os.getcwd(), 'cl_data')
-
-    # Split the data into training and validation sets directly from the input
-    split_data(yolo_input_root, train_val_root, 0.7)
+    from continueTraining.logic.cl_yolo_train import continue_training
 
     # Set the path to the weights file
-    weights_path = 'models/best.pt'
+    weights_path = os.path.join(os.getcwd(), 'data', project, 'models', 'best.pt')
 
     # Set the path to the data configuration file
-    data_yaml = 'datasets/data-chimp.yaml'
+    data_yaml = os.path.join(os.getcwd(), 'data', project, 'yaml-files', 'data.yaml')
+
+    current_experiment = experiment_name
 
     # Continue training the model
-    continue_training(weights_path, data_yaml, 640, 16, 50, 0)
+    continue_training(weights_path, data_yaml, 640, 16, 50, 0, current_experiment)
 
 
 if __name__ == "__main__":
     # Install required packages before executing main function
     install_requirements('requirements.txt')
-    # Execute train function
+
+    # docker-compose up
+    os.system('docker-compose up mlflow-server -d')
+
+    # splitting the crude data into training and validation sets
+    split_data()
+
+    # Creating a new mlflow experiment if it does not exist
+    create_mlflow_experiment()
+
+    # training the model based on the existing weights with the new data
     train()
+
+    # Wait function to make this continual learning script run indefinitely
+    # wait(0.1, 8200)
