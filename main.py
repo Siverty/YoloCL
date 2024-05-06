@@ -9,10 +9,11 @@
 # 2. add logging
 # 3. add parameters for continual learning
 # 4. run directory add
+# 5. make project a parameter that is defined elsewhere
 
 import os
 
-# Select what project to use (TODO: needs to be a parameter)
+# Select what project to use
 project = 'CHILL'
 experiment_name = project + '_cl'
 
@@ -74,15 +75,28 @@ def train():
     from continueTraining.logic.cl_yolo_train import continue_training
 
     # Set the path to the weights file
-    weights_path = os.path.join(os.getcwd(), 'data', project, 'models', 'best.pt')
+    root = os.getcwd()
+    weights_dir = os.path.join(root, 'data', project, 'models')
+    weights_path_continue_training = os.path.join(weights_dir, 'continue_training')
+    weights_path_best = weights_dir
+
+    if os.listdir(weights_path_continue_training):
+        # If the continue_training directory has files, use the last modified file as the weights path
+        weights_path = max([os.path.join(weights_path_continue_training, f) for f in os.listdir(
+            weights_path_continue_training)], key=os.path.getmtime)
+        print(f"Using weights from {weights_path}, so will train with this already further trained model.")
+    else:
+        # If the directory is empty, use best.pt in the main models directory
+        weights_path = os.path.join(weights_path_best, 'best.pt')
+        print(f"Using weights from {weights_path}, so it will train with the initially provided model.")
 
     # Set the path to the data configuration file
-    data_yaml = os.path.join(os.getcwd(), 'data', project, 'yaml-files', 'data.yaml')
+    data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
 
     current_experiment = experiment_name
 
     # Continue training the model
-    continue_training(weights_path, data_yaml, 640, 16, 50, 0, current_experiment)
+    continue_training(weights_path, data_yaml, 640, 16, 1, 0, current_experiment)
 
 
 if __name__ == "__main__":
