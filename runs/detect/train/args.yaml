@@ -1,7 +1,7 @@
 task: detect
 mode: train
 model: models/best.pt
-data: datasets/data-chimp.yaml
+data: data/CHILL/yaml-files/data.yaml
 epochs: 50
 time: null
 patience: 100

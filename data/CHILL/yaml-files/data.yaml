@@ -1,0 +1,16 @@
+train: ../../cl_data/case1/train
+val: ../../cl_data/case1/valid
+
+nc: 14
+names: ['Bak', 'Bloembak', 'Buis', 'CD-DVD hoes', 'Emmer', 'Gieter', 'Jerrycan', 'Kabel', 'Klerenhanger', 'Kozijn',
+        'Krat', 'Lp plaat', 'Tuinstoel', 'Vat']
+
+# TODO:
+# add parameter for training into .yaml file
+
+roboflow:
+  workspace: chill
+  project: chill-hgrdy
+  version: 7
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/chill/chill-hgrdy/dataset/7
