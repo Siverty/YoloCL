@@ -96,7 +96,7 @@ def train():
     current_experiment = experiment_name
 
     # Continue training the model
-    continue_training(weights_path, data_yaml, 640, 16, 50, 0, current_experiment)
+    continue_training(weights_path, data_yaml, 640, 16, 15, 5, current_experiment)
 
 
 if __name__ == "__main__":
