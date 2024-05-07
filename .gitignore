@@ -160,3 +160,7 @@ cython_debug/
 
 # Yolov8
 runs/detect/
+*.cache
+
+# mlflow
+/$DEFAULT_ARTIFACT_ROOT/
