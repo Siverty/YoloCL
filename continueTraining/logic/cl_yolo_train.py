@@ -1,16 +1,22 @@
 import os
 import mlflow
 import mlflow.pytorch
+from ultralytics import YOLO
+import torch
+from datetime import datetime
 
 # Set MLFlow tracking URI
 mlflow.set_tracking_uri('http://localhost:5000')
 
 
 def continue_training(weights: str, model_specifics: str, image_size: int, batch_size: int, epochs: int,
-                      checkpoint: int, current_experiment: str):
-    from ultralytics import YOLO
-    import torch
-    from datetime import datetime
+                      checkpoint_interval: int, current_experiment: str):
+    # Set the root directory dynamically
+    root = os.getcwd()
+
+    # Set the MLFlow artifact root directory
+    mlflow_artifact_root = os.path.join(root, 'mlflow')
+    os.environ["MLFLOW_ARTIFACT_ROOT"] = mlflow_artifact_root
 
     # Get the experiment ID if it exists, or create a new one if it doesn't
     experiment = mlflow.get_experiment_by_name(current_experiment)
@@ -22,7 +28,7 @@ def continue_training(weights: str, model_specifics: str, image_size: int, batch
     # Remove the '_cl' extension from the experiment name
     new_name = current_experiment[:-3]
 
-    now_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+    now_time = datetime.now().strftime("%Y-%m-%d-%H:%M")
 
     # Get the number of existing runs within the experiment
     existing_runs = mlflow.search_runs(experiment_ids=[experiment_id])
@@ -42,37 +48,72 @@ def continue_training(weights: str, model_specifics: str, image_size: int, batch
             "image_size": image_size,
             "batch_size": batch_size,
             "epochs": epochs,
-            "checkpoint": checkpoint,
+            "checkpoint": checkpoint_interval,
             "experiment": current_experiment,
             "date": now_time
         })
 
-        # Load the existing model
-        model = YOLO(weights, task='train')
+        # Define the model and load the weights, if weights are not provided, use the default YOLOv8n weights
+        if weights is None:
+            model = YOLO(task='train')
+            print("❌ ERROR: No weights provided. Training with default YOLOv8n weights.")
+        else:
+            model = YOLO(weights, task='train')
+            print(f"✅ CONFIRMED: Training with weights from {weights}")
 
-        # Use the GPU if available, otherwise default to CPU
-        gpu_preference = '0' if torch.cuda.is_available() else ''
-        if gpu_preference != '0':
-            print('!!!ATTENTION: GPU not available. Training on CPU!!!')
+        # Use the GPU if available, otherwise default to CPU, with a warning
+        device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+        if device == 'cpu':
+            print('!!!ATTENTION: GPU ❌not❌ available. Training on CPU!!!')
 
         # Train the model
-        for epoch in range(1):
-            # Insert training code here, assume some metrics are calculated
-            model.train(device=gpu_preference, data=model_specifics,  imgsz=image_size, batch=batch_size, epochs=epochs,
-                        save_period=checkpoint, save_dir=0)
-            # log loss and accuracy for each epoch (adjust according to actual available metrics)
-            mlflow.log_metrics({"loss": 0.01 * epoch, "accuracy": 0.98 - 0.01 * epoch}, step=epoch)
+        for epoch in range(epochs % 10):
+            # Define the model and load the weights, if weights are not provided, use the default YOLOv8n weights
+            if weights is None:
+                model = YOLO(task='train')
+                print("❌ ERROR: No weights provided. Training with default YOLOv8n weights.")
+            else:
+                model = YOLO(weights, task='train')
+                print(f"✅ CONFIRMED: Training with weights from {weights}")
 
-            # Save the trained model
+            # Insert training code here, assume some metrics are calculated
+            results = model.train(device=device, data=model_specifics, imgsz=image_size, batch=batch_size,
+                                  epochs=epochs, save_period=checkpoint_interval)
+
+            if hasattr(results, 'results_dict'):
+                # Renaming metrics with invalid characters
+                renamed_results_dict = {metric.replace('(', '').replace(')', ''): value for metric, value in
+                                        results.results_dict.items()}
+                mlflow.log_metrics(renamed_results_dict, step=epoch)
+
+            # Save the trained model to the 'continue_training' directory
             root = os.getcwd()
             save_dir = os.path.join(root, 'data', new_name, 'models', 'continue_training')
             model_count = len(os.listdir(save_dir))
-            new_model_name = f"{model_count + 1}"
+            new_model_name = f"best_{model_count + 1}.pt"
 
             # Save the model as 'best_x.pt' in /models/continue_training
-            model_path = f"{save_dir}/best_{new_model_name}.pt"
-            model.save(model_path)
-            print(f"Model saved as best_{new_model_name}.pt in {save_dir}")
+            model_path = f"{save_dir}/{new_model_name}"
 
-            # Log model as an artifact
-            mlflow.log_artifact(model_path)
+            # Save the model
+            model.save(model_path)
+            print(f"Model saved as best_{new_model_name} in {save_dir}")
+
+            # Load the model
+            torch_model = torch.load(model_path)
+
+            # Define a new model class that wraps the loaded model
+            class ConvertedModel(torch.nn.Module):
+                def __init__(self, model):
+                    super(ConvertedModel, self).__init__()
+                    self.model = model
+
+                def forward(self, x):
+                    return self.model(x)
+
+            # Convert the loaded model to a torch.nn.Module
+            converted_model = ConvertedModel(torch_model)
+
+            # Log the converted model to MLflow
+            if epoch % checkpoint_interval == 0 or epoch == epochs - 1:
+                mlflow.pytorch.log_model(converted_model, f"{new_model_name}")
