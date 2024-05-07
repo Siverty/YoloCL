@@ -1,6 +1,7 @@
 # Description: This script is used to extract and split the data into training and validation sets.
 
 import os
+from sklearn.model_selection import train_test_split
 
 
 def split_data(input_data: str, prepared_data: str, train_ratio: float):
@@ -12,7 +13,6 @@ def split_data(input_data: str, prepared_data: str, train_ratio: float):
     - prepared_data (str): Path to the directory where prepared data will be stored.
     - train_ratio (float): Ratio of training data to total data.
     """
-    from sklearn.model_selection import train_test_split
 
     def gather_files(case_path: str):
         """
