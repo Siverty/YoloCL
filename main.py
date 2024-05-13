@@ -7,15 +7,19 @@
 # TODO:
 # 1. add testing capabilities
 # 2. add logging
-# 3. add parameters for continual learning
+# 3. add parameters for continual learning -- check
 # 4. run directory add
 # 5. make project a parameter that is defined elsewhere
 
 import os
+import mlflow
 
 # Select what project to use
 project = 'CHILL'
 experiment_name = project + '_cl'
+
+# Set MLFlow tracking URI
+mlflow.set_tracking_uri('http://localhost:5000')
 
 
 def install_requirements(requirements_file):
@@ -52,20 +56,28 @@ def create_mlflow_experiment():
     """
     Create a new MLFlow experiment if it does not exist.
     """
-    import mlflow
-
-    # Set MLFlow tracking URI
-    mlflow.set_tracking_uri('http://localhost:5000')
-
     # Check if the experiment exists
     experiment = mlflow.get_experiment_by_name(experiment_name)
 
-    # Create the experiment if it does not exist
+    # Create the experiment for this dataset/project if it does not exist
     if experiment is None:
         mlflow.create_experiment(experiment_name)
         print(f"Experiment '{experiment_name}' created.")
     else:
-        print(f"Experiment '{experiment_name}' already exists.\nContinuing training...")
+        print(f"Experiment '{experiment_name}' already exists.\nContinuing training... ▶️ ▶️ ▶️ ")
+
+
+def fetch_parent_runs(experiment_id):
+    runs = mlflow.search_runs([experiment_id], filter_string="tags.mlflow.parentRunId = ''")
+    if runs.empty:
+        return []
+    return [run for run in runs.itertuples() if getattr(run, 'info.parent_run_id', None) is None]
+
+
+def name_next_parent_run(experiment_id, base_name='Parent_CHILL_cl'):
+    parent_runs = fetch_parent_runs(experiment_id)
+    next_index = len(parent_runs) + 1
+    return f"{base_name}_{next_index}", next_index
 
 
 def train():
@@ -80,6 +92,15 @@ def train():
     weights_path_continue_training = os.path.join(weights_dir, 'continue_training')
     weights_path_best = weights_dir
 
+    # Constants
+    amount_of_runs = 3
+    # --The weights path is determined in the upcoming if-else statement -- #
+    data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
+    image_size = 640
+    batch_size = 16
+    epochs = 1
+    checkpoint_interval = 0
+
     if os.listdir(weights_path_continue_training):
         # If the continue_training directory has files, use the last modified file as the weights path
         weights_path = max([os.path.join(weights_path_continue_training, f) for f in os.listdir(
@@ -90,16 +111,34 @@ def train():
         weights_path = os.path.join(weights_path_best, 'best.pt')
         print(f"Using weights from {weights_path}, so it will train with the initially provided model.▶️")
 
-    # Set the path to the data configuration file
-    data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
+    # Get the experiment ID if it exists, or create a new one if it doesn't
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    if experiment:
+        experiment_id = experiment.experiment_id
+    else:
+        experiment_id = mlflow.create_experiment(experiment_name)
 
-    current_experiment = experiment_name
+    # Get the number of existing runs within the experiment
+    existing_runs = mlflow.search_runs(experiment_ids=[experiment_id])
+    num_runs = len(existing_runs) - 1
+    name = num_runs + 1
 
-    # Continue training the model
-    continue_training(weights_path, data_yaml, 640, 16, 15, 5, current_experiment)
+    # dynamically name the parent run
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    experiment_id = experiment.experiment_id if experiment else mlflow.create_experiment(experiment_name)
+    next_run_name, parent_index = name_next_parent_run(experiment_id)
+
+    # Start the parent run with child runs nested
+    with mlflow.start_run(run_name=next_run_name, experiment_id=experiment_id):
+        for i in range(amount_of_runs):  # Assume you want 3 child runs
+            continue_training(weights_path, data_yaml, image_size, batch_size, epochs, checkpoint_interval,
+                              experiment_name, experiment_id, parent_index, i + 1)
 
 
 if __name__ == "__main__":
+    """
+    Main function to run the continual learning process.
+    """
     # Install required packages before executing main function
     install_requirements('requirements.txt')
 
