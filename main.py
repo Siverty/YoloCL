@@ -90,7 +90,6 @@ def train():
     root = os.getcwd()
     weights_dir = os.path.join(root, 'data', project, 'models')
     weights_path_continue_training = os.path.join(weights_dir, 'continue_training')
-    weights_path_best = weights_dir
 
     # Constants
     amount_of_runs = 3
@@ -108,7 +107,7 @@ def train():
         print(f"Using weights from {weights_path}, so will train with this already further trained model.⏭")
     else:
         # If the directory is empty, use best.pt in the main models directory
-        weights_path = os.path.join(weights_path_best, 'best.pt')
+        weights_path = os.path.join(weights_dir, 'best.pt')
         print(f"Using weights from {weights_path}, so it will train with the initially provided model.▶️")
 
     # Get the experiment ID if it exists, or create a new one if it doesn't
