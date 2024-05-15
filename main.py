@@ -12,7 +12,10 @@
 # 5. make project a parameter that is defined elsewhere
 
 import os
+import sys
 import mlflow
+import docker
+from docker.errors import NotFound, DockerException
 
 # Select what project to use
 project = 'CHILL'
@@ -34,6 +37,30 @@ def install_requirements(requirements_file):
             if req.startswith('#'):
                 continue  # Skip comments
             os.system(f'pip install --no-cache {req}')
+
+
+def is_docker_engine_running():
+    """
+    Check if the Docker engine is running.
+    """
+    try:
+        client = docker.from_env()
+        client.ping()
+        return True
+    except (DockerException, NotFound):
+        return False
+
+
+def is_container_running(container_name_substring):
+    """
+    Check if any Docker container with a name containing the given substring is running.
+    """
+    client = docker.from_env()
+    containers = client.containers.list()
+    for container in containers:
+        if container_name_substring in container.name:
+            return True
+    return False
 
 
 def split_data():
@@ -68,13 +95,13 @@ def create_mlflow_experiment():
 
 
 def fetch_parent_runs(experiment_id):
-    runs = mlflow.search_runs([experiment_id], filter_string="tags.mlflow.parentRunId = ''")
+    runs = mlflow.search_runs([experiment_id])
     if runs.empty:
         return []
     return [run for run in runs.itertuples() if getattr(run, 'info.parent_run_id', None) is None]
 
 
-def name_next_parent_run(experiment_id, base_name='Parent_CHILL_cl'):
+def name_next_parent_run(experiment_id, base_name=f"Parent_{experiment_name}"):
     parent_runs = fetch_parent_runs(experiment_id)
     next_index = len(parent_runs) + 1
     return f"{base_name}_{next_index}", next_index
@@ -97,7 +124,7 @@ def train():
     data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
     image_size = 640
     batch_size = 16
-    epochs = 1
+    epochs = 2
     checkpoint_interval = 0
 
     if os.listdir(weights_path_continue_training):
@@ -125,11 +152,12 @@ def train():
     # dynamically name the parent run
     experiment = mlflow.get_experiment_by_name(experiment_name)
     experiment_id = experiment.experiment_id if experiment else mlflow.create_experiment(experiment_name)
+
     next_run_name, parent_index = name_next_parent_run(experiment_id)
 
     # Start the parent run with child runs nested
     with mlflow.start_run(run_name=next_run_name, experiment_id=experiment_id):
-        for i in range(amount_of_runs):  # Assume you want 3 child runs
+        for i in range(amount_of_runs):
             continue_training(weights_path, data_yaml, image_size, batch_size, epochs, checkpoint_interval,
                               experiment_name, experiment_id, parent_index, i + 1)
 
@@ -141,11 +169,20 @@ if __name__ == "__main__":
     # Install required packages before executing main function
     install_requirements('requirements.txt')
 
+    # Check if Docker engine is running
+    if not is_docker_engine_running():
+        print("Docker engine is not running. Please start Docker Desktop and try again.")
+        sys.exit(1)
+
     # docker-compose up
     os.system('docker-compose up mlflow-server -d')
 
-    # splitting the crude data into training and validation sets
-    split_data()
+    # Check if any container with 'mlflow' in its name is running
+    if is_container_running('mlflow'):
+        # splitting the crude data into training and validation sets
+        split_data()
+    else:
+        print("ERROR: No container with 'mlflow' in its name is running. Please start the container and try again.")
 
     # Creating a new mlflow experiment if it does not exist
     create_mlflow_experiment()
