@@ -10,7 +10,8 @@ mlflow.set_tracking_uri('http://localhost:5000')
 
 
 def continue_training(weights: str, model_specifics: str, image_size: int, batch_size: int, epochs: int,
-                      checkpoint_interval: int, experiment_name: str, experiment_id: str, parent_index: int, child_index: int):
+                      checkpoint_interval: int, experiment_name: str, experiment_id: str, parent_index: int,
+                      child_index: int):
     # Set the root directory dynamically
     root = os.getcwd()
 
@@ -38,7 +39,7 @@ def continue_training(weights: str, model_specifics: str, image_size: int, batch
         # Use the GPU if available, otherwise default to CPU, with a warning
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         if device == 'cpu':
-            print('!!!ATTENTION: GPU ❌not ❌ available. Training on CPU!!!')
+            print('!!!ATTENTION: GPU ❌ not ❌ available. Training on CPU!!!')
 
         # Define the model and load the weights, if weights are not provided, use the default YOLOv8n weights
         if weights is None:
@@ -48,28 +49,38 @@ def continue_training(weights: str, model_specifics: str, image_size: int, batch
             model = YOLO(weights, task='train')
             print(f"✅ CONFIRMED: Training with weights from {weights}")
 
-        # Insert training code here, assume some metrics are calculated
-        results = model.train(device=device, data=model_specifics, imgsz=image_size, batch=batch_size,
-                              epochs=epochs, save_period=checkpoint_interval)
+        # Set up the training parameters
+        training_params = {
+            'device': device,
+            'data': model_specifics,
+            'imgsz': image_size,
+            'batch': batch_size,
+            'epochs': epochs,
+            'save_period': checkpoint_interval,
+            'val': False,
+        }
 
-        if hasattr(results, 'results_dict'):
-            # Renaming metrics with invalid characters
-            reshaped_results_dict = {metric.replace('(', '').replace(')', ''): value for metric, value in
-                                    results.results_dict.items()}
-            mlflow.log_metrics(reshaped_results_dict, step=epochs)
+        # Train the model and log the parameters after each input
+        for epoch in range(1):
+            results = model.train(**training_params)
+
+            # Assuming the results object has attributes like 'metrics' containing precision, recall, etc.
+            if hasattr(results, 'results_dict'):
+                # Renaming metrics with invalid characters
+                reshaped_results_dict = {metric.replace('(', '').replace(')', ''): value for metric, value in
+                                         results.results_dict.items()}
+                mlflow.log_metrics(reshaped_results_dict, step=epoch)
 
         # Save the trained model to the 'continue_training' directory
-        root = os.getcwd()
         save_dir = os.path.join(root, 'data', new_name, 'models', 'continue_training')
+        os.makedirs(save_dir, exist_ok=True)
         model_count = len(os.listdir(save_dir))
         new_model_name = f"best_{model_count + 1}.pt"
 
         # Save the model as 'best_x.pt' in /models/continue_training
-        model_path = f"{save_dir}/{new_model_name}"
-
-        # Save the model
+        model_path = os.path.join(save_dir, new_model_name)
         model.save(model_path)
-        print(f"✅ Model saved as best_{new_model_name} \nin {save_dir}")
+        print(f"✅ Model saved as {new_model_name} in {save_dir}")
 
         # Load the model
         torch_model = torch.load(model_path)
@@ -87,4 +98,4 @@ def continue_training(weights: str, model_specifics: str, image_size: int, batch
         converted_model = ConvertedModel(torch_model)
 
         # Log the converted model to MLflow
-        mlflow.pytorch.log_model(converted_model, f"{new_model_name}")
+        mlflow.pytorch.log_model(converted_model, new_model_name)
