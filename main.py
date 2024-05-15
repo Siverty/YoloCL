@@ -126,16 +126,7 @@ def train():
     batch_size = 16
     epochs = 2
     checkpoint_interval = 0
-
-    if os.listdir(weights_path_continue_training):
-        # If the continue_training directory has files, use the last modified file as the weights path
-        weights_path = max([os.path.join(weights_path_continue_training, f) for f in os.listdir(
-            weights_path_continue_training)], key=os.path.getmtime)
-        print(f"Using weights from {weights_path}, so will train with this already further trained model.⏭")
-    else:
-        # If the directory is empty, use best.pt in the main models directory
-        weights_path = os.path.join(weights_dir, 'best.pt')
-        print(f"Using weights from {weights_path}, so it will train with the initially provided model.▶️")
+    weights_continual_training = True
 
     # Get the experiment ID if it exists, or create a new one if it doesn't
     experiment = mlflow.get_experiment_by_name(experiment_name)
@@ -155,11 +146,39 @@ def train():
 
     next_run_name, parent_index = name_next_parent_run(experiment_id)
 
+    # Check if the weights are to be continually trained
+    if not weights_continual_training:
+        # Check for the newest weights otherwise use the default weights
+        if os.listdir(weights_path_continue_training):
+            # If the continue_training directory has files, use the last modified file as the weights path
+            weights_path = max([os.path.join(weights_path_continue_training, f) for f in os.listdir(
+                weights_path_continue_training)], key=os.path.getmtime)
+            print(f"Using weights from {weights_path}, so will train with this already further trained model.⏭")
+        else:
+            # If the directory is empty, use best.pt in the main models directory
+            weights_path = os.path.join(weights_dir, 'best.pt')
+            print(f"Using weights from {weights_path}, so it will train with the initially provided model.▶️")
+
     # Start the parent run with child runs nested
     with mlflow.start_run(run_name=next_run_name, experiment_id=experiment_id):
         for i in range(amount_of_runs):
-            continue_training(weights_path, data_yaml, image_size, batch_size, epochs, checkpoint_interval,
-                              experiment_name, experiment_id, parent_index, i + 1)
+
+            # Check if the weights are to be continually trained
+            if weights_continual_training:
+                # Check for the newest weights otherwise use the default weights
+                if os.listdir(weights_path_continue_training):
+                    # If the continue_training directory has files, use the last modified file as the weights path
+                    weights_path = max([os.path.join(weights_path_continue_training, f) for f in os.listdir(
+                        weights_path_continue_training)], key=os.path.getmtime)
+                    print(f"Using weights from {weights_path}, so will train with this already further trained model.⏭")
+                else:
+                    # If the directory is empty, use best.pt in the main models directory
+                    weights_path = os.path.join(weights_dir, 'best.pt')
+                    print(f"Using weights from {weights_path}, so it will train with the initially provided model.▶️")
+
+                # Start the training process
+                continue_training(weights_path, data_yaml, image_size, batch_size, epochs, checkpoint_interval,
+                                  experiment_name, experiment_id, parent_index, i + 1)
 
 
 if __name__ == "__main__":
