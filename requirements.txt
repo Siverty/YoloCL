@@ -5,3 +5,4 @@ pandas
 ultralytics
 scikit-learn
 mlflow
+docker
