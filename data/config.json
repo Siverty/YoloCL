@@ -1,0 +1,30 @@
+{
+  "projects": {
+    "CHILL": {
+      "experiment_name": "CHILL_cl",
+      "weights_dir": "data/CHILL/models",
+      "weights_path_continue_training": "data/CHILL/models/continue_training",
+      "amount_of_runs": 3,
+      "data_yaml": "data/CHILL/yaml-files/data.yaml",
+      "image_size": 640,
+      "batch_size": 16,
+      "epochs": 15,
+      "checkpoint_interval": 0,
+      "weights_continual_training": true,
+      "mlflow_tracking_uri": "http://localhost:8282"
+    },
+    "P&ID_recognition": {
+      "experiment_name": "PID_recognition_cl",
+      "weights_dir": "data/PID_recognition/models",
+      "weights_path_continue_training": "data/PID_recognition/models/continue_training",
+      "amount_of_runs": 3,
+      "data_yaml": "data/PID_recognition/yaml-files/data.yaml",
+      "image_size": 640,
+      "batch_size": 16,
+      "epochs": 15,
+      "checkpoint_interval": 0,
+      "weights_continual_training": true,
+      "mlflow_tracking_uri": "http://localhost:8282"
+    }
+  }
+}
