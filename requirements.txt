@@ -5,4 +5,10 @@ pandas
 ultralytics
 scikit-learn
 mlflow
-docker
+Docker
+Flask
+Flask-Cors
+numpy
+opencv-python
+glob2
+requests
