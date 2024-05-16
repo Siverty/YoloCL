@@ -77,5 +77,5 @@ def split_data(input_data: str, prepared_data: str, train_ratio: float):
             link_files(valid_images, valid_images_dir)
             link_files(valid_labels, valid_labels_dir)
 
-            print(f"Case {case_dir}: {len(train_images)} training and {len(valid_images)} validation images."
+            print(f"Folder: {case_dir}; {len(train_images)} training and {len(valid_images)} validation images."
                   f"\n Using a {train_ratio}% training ratio split.")
