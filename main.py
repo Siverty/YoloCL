@@ -4,25 +4,43 @@
 # Be sure to run this script in a .venv environment with the required packages installed.
 # The pytorch && CUDA installations will otherwise throw exotics errors.
 
-# TODO:
-# 1. add testing capabilities
-# 2. add logging
-# 3. add parameters for continual learning -- check
-# 4. run directory add
-# 5. make project a parameter that is defined elsewhere
-
+# Import the required packages
 import os
 import sys
 import mlflow
 import docker
 from docker.errors import NotFound, DockerException
+import time
+import requests
+
+# Import the required functions from the logic modules
+from continueTraining.logic.data_handler.trainValSplit import split_data
+from continueTraining.logic.cl_yolo_train import continue_training
+
+# Import the create_app function from app.py
+from app import create_app
 
 # Select what project to use
 project = 'CHILL'
 experiment_name = project + '_cl'
 
-# Set MLFlow tracking URI
-mlflow.set_tracking_uri('http://localhost:5000')
+# Set mlflow tracking URI
+mlflow.set_tracking_uri('http://localhost:8282')
+
+# Set the path to the weights file
+root = os.getcwd()
+weights_dir = os.path.join(root, 'data', project, 'models')
+weights_path_continue_training = os.path.join(weights_dir, 'continue_training')
+
+# Constants
+amount_of_runs = 3
+# --The weights path is determined in the upcoming if-else statement -- #
+data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
+image_size = 640
+batch_size = 16
+epochs = 2
+checkpoint_interval = 0
+weights_continual_training = True
 
 
 def install_requirements(requirements_file):
@@ -63,12 +81,10 @@ def is_container_running(container_name_substring):
     return False
 
 
-def split_data():
+def split():
     """
     Split the raw data into training and validation sets.
     """
-    from continueTraining.logic.data_handler.trainValSplit import split_data
-
     # Define the root path of the input directory for YOLO data
     yolo_input_root = os.path.join(os.getcwd(), 'data', project, 'yolo_input')
 
@@ -94,6 +110,21 @@ def create_mlflow_experiment():
         print(f"Experiment '{experiment_name}' already exists.\nContinuing training... ▶️ ▶️ ▶️ ")
 
 
+# This function makes the script wait to ensure the MLflow server is running before proceeding
+def wait_for_mlflow_server(timeout=10):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            response = requests.get(mlflow.get_tracking_uri())
+            if response.status_code == 200:
+                print("MLflow server is running.")
+                return True
+        except requests.ConnectionError:
+            print("Waiting for MLflow server...")
+        time.sleep(5)
+    raise RuntimeError("MLflow server did not start within the timeout period.")
+
+
 def fetch_parent_runs(experiment_id):
     runs = mlflow.search_runs([experiment_id])
     if runs.empty:
@@ -111,23 +142,7 @@ def train():
     """
     Function to execute the training process on existing weights.
     """
-    from continueTraining.logic.cl_yolo_train import continue_training
-
-    # Set the path to the weights file
-    root = os.getcwd()
-    weights_dir = os.path.join(root, 'data', project, 'models')
-    weights_path_continue_training = os.path.join(weights_dir, 'continue_training')
-
-    # Constants
-    amount_of_runs = 3
-    # --The weights path is determined in the upcoming if-else statement -- #
-    data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
-    image_size = 640
-    batch_size = 16
-    epochs = 2
-    checkpoint_interval = 0
-    weights_continual_training = True
-
+    train_images_dir = split_data()
     # Get the experiment ID if it exists, or create a new one if it doesn't
     experiment = mlflow.get_experiment_by_name(experiment_name)
     if experiment:
@@ -162,6 +177,17 @@ def train():
     # Start the parent run with child runs nested
     with mlflow.start_run(run_name=next_run_name, experiment_id=experiment_id):
         for i in range(amount_of_runs):
+            mlflow.log_params({
+                "Dataset": train_images_dir,
+                "Weights": weights_path[weights_path.rfind('\\') + 1:] if '\\' in weights_path else weights_path,
+                "Epochs": epochs,
+                "Checkpoint": checkpoint_interval,
+                "Experiment": experiment_name,
+                "Date": time.strftime("%Y-%m-%d-%H:%M"),
+                "yaml_file": data_yaml,
+                "image_size": image_size,
+                "batch_size": batch_size,
+            })
 
             # Check if the weights are to be continually trained
             if weights_continual_training:
@@ -183,10 +209,10 @@ def train():
 
 if __name__ == "__main__":
     """
-    Main function to run the continual learning process.
+    Main function to run the continual learning process and the frontend application.
     """
     # Install required packages before executing main function
-    install_requirements('requirements.txt')
+    # install_requirements('requirements.txt')
 
     # Check if Docker engine is running
     if not is_docker_engine_running():
@@ -199,15 +225,24 @@ if __name__ == "__main__":
     # Check if any container with 'mlflow' in its name is running
     if is_container_running('mlflow'):
         # splitting the crude data into training and validation sets
-        split_data()
+        split()
     else:
         print("ERROR: No container with 'mlflow' in its name is running. Please start the container and try again.")
+
+    wait_for_mlflow_server()
 
     # Creating a new mlflow experiment if it does not exist
     create_mlflow_experiment()
 
+    # Start app.py
+    app = create_app(project)
+    app.run(host='0.0.0.0', port=5000)
+
     # training the model based on the existing weights with the new data
-    train()
+    try:
+        train()
+    except Exception as e:
+        print(f"Training failed with error: {e}")
 
     # Wait function to make this continual learning script run indefinitely
     # wait(0.1, 8200)
