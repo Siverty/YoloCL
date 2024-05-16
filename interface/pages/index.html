@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Continual Learning</title>
+    <link rel="stylesheet" href="../styles/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../artefacts/LogoZUYD.png" alt="Zuyd Hogeschool Logo" class="logo">
+            <h1>YOLO Continual Learning</h1>
+            <h1> </h1>
+        </div>
+    </header>
+    <div class="container">
+        <div class="content">
+            <div class="camera-feed">
+                <video id="webcam" autoplay></video>
+                <canvas id="overlay"></canvas>
+            </div>
+            <div class="predictions">
+                <h2>Predictions</h2>
+                <ul id="prediction-list">
+                    <li>Prediction 1: xx%</li>
+                    <li>Prediction 2: xx%</li>
+                    <li>Prediction 3: xx%</li>
+                    <li>Prediction 4: xx%</li>
+                    <li>Prediction 5: xx%</li>
+                    <li>Prediction 6: xx%</li>
+                    <li>Prediction 7: xx%</li>
+                    <li>Prediction 8: xx%</li>
+                    <li>Prediction 9: xx%</li>
+                    <li>Prediction 10: xx%</li>
+                </ul>
+                <div class="button-container">
+                    <button id="train-btn">Train</button>
+                    <button id="upload-btn">Upload Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; Justin Schots - Lectoraat Data Intelligence Zuyd</p>
+    </footer>
+    <script src="../code/script.js"></script>
+</body>
+</html>
