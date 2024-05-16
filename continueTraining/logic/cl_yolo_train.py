@@ -3,13 +3,13 @@ import mlflow
 import mlflow.pytorch
 from ultralytics import YOLO
 import torch
-from datetime import datetime
+import time
 
 # Set MLFlow tracking URI
-mlflow.set_tracking_uri('http://localhost:5000')
+mlflow.set_tracking_uri('http://localhost:8282')
 
 
-def continue_training(weights: str, model_specifics: str, image_size: int, batch_size: int, epochs: int,
+def continue_training(weights: str, data_yaml: str, image_size: int, batch_size: int, epochs: int,
                       checkpoint_interval: int, experiment_name: str, experiment_id: str, parent_index: int,
                       child_index: int):
     # Set the root directory dynamically
@@ -26,14 +26,15 @@ def continue_training(weights: str, model_specifics: str, image_size: int, batch
 
     with mlflow.start_run(experiment_id=experiment_id, run_name=iteration_name, nested=True):
         mlflow.log_params({
-            "weights": weights,
-            "yaml_file": model_specifics,
+            "Dataset": "CHILL",
+            "Weights": weights,
+            "Epochs": epochs,
+            "Checkpoint": checkpoint_interval,
+            "Experiment": experiment_name,
+            "Date": time.strftime("%Y-%m-%d-%H:%M"),
+            "yaml_file": data_yaml,
             "image_size": image_size,
             "batch_size": batch_size,
-            "epochs": epochs,
-            "checkpoint": checkpoint_interval,
-            "experiment": experiment_name,
-            "date": datetime.now().strftime("%Y-%m-%d-%H:%M")
         })
 
         # Use the GPU if available, otherwise default to CPU, with a warning
@@ -49,10 +50,10 @@ def continue_training(weights: str, model_specifics: str, image_size: int, batch
             model = YOLO(weights, task='train')
             print(f"✅ CONFIRMED: Training with weights from {weights}")
 
-        # Set up the training parameters
+        # Set up the training parameters for YOLO
         training_params = {
             'device': device,
-            'data': model_specifics,
+            'data': data_yaml,
             'imgsz': image_size,
             'batch': batch_size,
             'epochs': epochs,
