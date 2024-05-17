@@ -9,12 +9,21 @@ from ultralytics import YOLO
 
 def load_latest_model(project_name):
     model_path = None
-    model_dir = f"data/{project_name}/models/continue_training/"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_dir = os.path.join(current_dir, f"../data/{project_name}/models/continue_training/")
+
+    # Debugging statement to check model_dir
+    print(f"Looking for models in: {os.path.abspath(model_dir)}")
+
     models = glob.glob(os.path.join(model_dir, "best_*.pt"))
+
     if models:
         model_path = max(models, key=os.path.getctime)
     else:
-        model_path = f"data/{project_name}/models/best.pt"
+        model_path = os.path.join(current_dir, f"../data/{project_name}/models/best.pt")
+
+    # Debugging statement to check model_path
+    print(f"Trying to load model from: {os.path.abspath(model_path)}")
 
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found: {model_path}")
@@ -23,7 +32,7 @@ def load_latest_model(project_name):
 
 
 def create_app(project_name):
-    app = Flask(__name__, static_folder='interface', template_folder='interface/pages')
+    app = Flask(__name__, static_folder='.', template_folder='pages')
     CORS(app)
 
     # Load the model
