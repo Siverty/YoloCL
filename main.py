@@ -18,7 +18,7 @@ from continueTraining.logic.data_handler.trainValSplit import split_data
 from continueTraining.logic.cl_yolo_train import continue_training
 
 # Import the create_app function from app.py
-from app import create_app
+from interface.app import create_app
 
 # Select what project to use
 project = 'CHILL'

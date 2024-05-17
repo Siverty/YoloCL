@@ -36,15 +36,15 @@ def create_app(project_name):
 
     @app.route('/artefacts/<path:filename>')
     def serve_artefacts(filename):
-        return send_from_directory('interface/artefacts', filename)
+        return send_from_directory('artefacts', filename)
 
     @app.route('/styles/<path:filename>')
     def serve_styles(filename):
-        return send_from_directory('interface/styles', filename)
+        return send_from_directory('styles', filename)
 
     @app.route('/code/<path:filename>')
     def serve_code(filename):
-        return send_from_directory('interface/code', filename)
+        return send_from_directory('code', filename)
 
     @app.route('/detect', methods=['POST'])
     def detect():
