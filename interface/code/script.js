@@ -44,4 +44,4 @@ function displayDetections(detections) {
     });
 }
 
-setInterval(detectObjects, 250);
+setInterval(detectObjects, 70);
