@@ -9,7 +9,7 @@ import time
 mlflow.set_tracking_uri('http://localhost:8282')
 
 
-def continue_training(weights: str, data_yaml: str, image_size: int, batch_size: int, epochs: int,
+def continue_training(weights: str, data_yaml: str, image_size: int, batch_size: int, epochs: int, repeats: int,
                       checkpoint_interval: int, experiment_name: str, experiment_id: str, parent_index: int,
                       child_index: int):
     # Set the root directory dynamically
@@ -29,6 +29,7 @@ def continue_training(weights: str, data_yaml: str, image_size: int, batch_size:
             "Dataset": "CHILL",
             "Weights": weights,
             "Epochs": epochs,
+            "Repeats": repeats,
             "Checkpoint": checkpoint_interval,
             "Experiment": experiment_name,
             "Date": time.strftime("%Y-%m-%d-%H:%M"),
@@ -46,9 +47,11 @@ def continue_training(weights: str, data_yaml: str, image_size: int, batch_size:
         if weights is None:
             model = YOLO(task='train')
             print("❌ ERROR: No weights provided. Training with default YOLOv8n weights.")
+            pretrained = False
         else:
             model = YOLO(weights, task='train')
             print(f"✅ CONFIRMED: Training with weights from {weights}")
+            pretrained = True
 
         # Set up the training parameters for YOLO
         training_params = {
@@ -59,13 +62,18 @@ def continue_training(weights: str, data_yaml: str, image_size: int, batch_size:
             'epochs': epochs,
             'save_period': checkpoint_interval,
             'val': False,
+            'pretrained': pretrained,
         }
 
         # Train the model and log the parameters after each input
-        for epoch in range(1):
+        for epoch in range(repeats):
+            # Train the model with the training parameters
             results = model.train(**training_params)
 
-            # Assuming the results object has attributes like 'metrics' containing precision, recall, etc.
+            # Enable system metrics logging in MLflow
+            mlflow.enable_system_metrics_logging()
+
+            # Log metrics from results
             if hasattr(results, 'results_dict'):
                 # Renaming metrics with invalid characters
                 reshaped_results_dict = {metric.replace('(', '').replace(')', ''): value for metric, value in
