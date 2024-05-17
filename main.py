@@ -7,6 +7,14 @@
 # Import the required packages
 import os
 import sys
+
+from install_requirements import install_requirements
+
+# Install the required packages
+# install_requirements("requirements.txt")
+
+
+# Continue the imports that are to be installed here:
 import mlflow
 import docker
 from docker.errors import NotFound, DockerException
@@ -34,27 +42,14 @@ weights_path_continue_training = os.path.join(weights_dir, 'continue_training')
 
 # Constants
 amount_of_runs = 3
+epochs = 5
+repeats = 5     # Number of repeats of the same training process for addition of mlflow metrics
 # --The weights path is determined in the upcoming if-else statement -- #
 data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
 image_size = 640
 batch_size = 16
-epochs = 2
 checkpoint_interval = 0
-weights_continual_training = True
-
-
-def install_requirements(requirements_file):
-    """
-    Install required packages listed in the requirements.txt file, and upgrade pip.
-    """
-    os.system('python -m pip install --upgrade pip')
-    with open(requirements_file, 'r') as file:
-        requirements = file.readlines()
-        for req in requirements:
-            req = req.strip()  # Remove leading/trailing whitespace
-            if req.startswith('#'):
-                continue  # Skip comments
-            os.system(f'pip install --no-cache {req}')
+continual_training = True
 
 
 def is_docker_engine_running():
@@ -112,6 +107,9 @@ def create_mlflow_experiment():
 
 # This function makes the script wait to ensure the MLflow server is running before proceeding
 def wait_for_mlflow_server(timeout=10):
+    """
+    This function makes the script wait to ensure the MLflow server is running before proceeding.
+    """
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:
@@ -140,9 +138,8 @@ def name_next_parent_run(experiment_id, base_name=f"Parent_{experiment_name}"):
 
 def train():
     """
-    Function to execute the training process on existing weights.
+    Function to execute the training process on provided and self-made weights.
     """
-    train_images_dir = split_data()
     # Get the experiment ID if it exists, or create a new one if it doesn't
     experiment = mlflow.get_experiment_by_name(experiment_name)
     if experiment:
@@ -155,14 +152,16 @@ def train():
     num_runs = len(existing_runs) - 1
     name = num_runs + 1
 
-    # dynamically name the parent run
+    # Dynamically name the parent run
     experiment = mlflow.get_experiment_by_name(experiment_name)
     experiment_id = experiment.experiment_id if experiment else mlflow.create_experiment(experiment_name)
 
     next_run_name, parent_index = name_next_parent_run(experiment_id)
 
+    weights_path = None
+
     # Check if the weights are to be continually trained
-    if not weights_continual_training:
+    if not continual_training:
         # Check for the newest weights otherwise use the default weights
         if os.listdir(weights_path_continue_training):
             # If the continue_training directory has files, use the last modified file as the weights path
@@ -177,20 +176,9 @@ def train():
     # Start the parent run with child runs nested
     with mlflow.start_run(run_name=next_run_name, experiment_id=experiment_id):
         for i in range(amount_of_runs):
-            mlflow.log_params({
-                "Dataset": train_images_dir,
-                "Weights": weights_path[weights_path.rfind('\\') + 1:] if '\\' in weights_path else weights_path,
-                "Epochs": epochs,
-                "Checkpoint": checkpoint_interval,
-                "Experiment": experiment_name,
-                "Date": time.strftime("%Y-%m-%d-%H:%M"),
-                "yaml_file": data_yaml,
-                "image_size": image_size,
-                "batch_size": batch_size,
-            })
 
             # Check if the weights are to be continually trained
-            if weights_continual_training:
+            if continual_training:
                 # Check for the newest weights otherwise use the default weights
                 if os.listdir(weights_path_continue_training):
                     # If the continue_training directory has files, use the last modified file as the weights path
@@ -203,17 +191,14 @@ def train():
                     print(f"Using weights from {weights_path}, so it will train with the initially provided model.▶️")
 
                 # Start the training process
-                continue_training(weights_path, data_yaml, image_size, batch_size, epochs, checkpoint_interval,
-                                  experiment_name, experiment_id, parent_index, i + 1)
+                continue_training(weights_path, data_yaml, image_size, batch_size, epochs, repeats,
+                                  checkpoint_interval, experiment_name, experiment_id, parent_index, i + 1)
 
 
 if __name__ == "__main__":
     """
     Main function to run the continual learning process and the frontend application.
     """
-    # Install required packages before executing main function
-    # install_requirements('requirements.txt')
-
     # Check if Docker engine is running
     if not is_docker_engine_running():
         print("Docker engine is not running. Please start Docker Desktop and try again.")
@@ -224,7 +209,7 @@ if __name__ == "__main__":
 
     # Check if any container with 'mlflow' in its name is running
     if is_container_running('mlflow'):
-        # splitting the crude data into training and validation sets
+        # Splitting the crude data into training and validation sets
         split()
     else:
         print("ERROR: No container with 'mlflow' in its name is running. Please start the container and try again.")
@@ -238,11 +223,8 @@ if __name__ == "__main__":
     app = create_app(project)
     app.run(host='0.0.0.0', port=5000)
 
-    # training the model based on the existing weights with the new data
-    try:
-        train()
-    except Exception as e:
-        print(f"Training failed with error: {e}")
+    # # Training the model based on the existing weights with the new data
+    # train()
 
     # Wait function to make this continual learning script run indefinitely
     # wait(0.1, 8200)
