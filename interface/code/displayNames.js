@@ -40,34 +40,55 @@ async function fetchNames() {
     }
 }
 
-// Display the class names on the interface in a list
-async function displayNames() {
+// Initialize the predictions list with all class names set to 0% confidence
+function initializePredictionsList() {
+    const predictionList = document.getElementById('prediction-list');
+    predictionList.innerHTML = '';
+
+    classNames.forEach(name => {
+        const listItem = document.createElement('li');
+        listItem.id = `prediction-${name}`;
+        listItem.textContent = `${name}: 0%`;
+        predictionList.appendChild(listItem);
+    });
+}
+
+// Function to update the predictions list with new detections
+function updatePredictions(detections) {
+    // Reset all confidences to 0%
+    classNames.forEach(name => {
+        const listItem = document.getElementById(`prediction-${name}`);
+        listItem.textContent = `${name}: 0%`;
+    });
+
+    // Update the list with the new detection confidences
+    detections.forEach(detection => {
+        const [x1, y1, x2, y2, confidence, classId] = detection;
+        const name = classNames[classId];
+        const listItem = document.getElementById(`prediction-${name}`);
+        listItem.textContent = `${name}: ${(confidence * 100).toFixed(2)}%`;
+    });
+}
+
+// Function to initialize the display names
+async function initializeDisplayNames() {
     const names = await fetchNames();
     if (!names.length) {
         console.error('No names found in data.yaml');
         return;
     }
 
-    const predictionList = document.getElementById('prediction-list');
-    predictionList.innerHTML = '';
+    // Initialize the predictions list
+    initializePredictionsList();
 
-    const maxItemsPerRow = 10;
-    let currentRow = document.createElement('div');
-    currentRow.classList.add('prediction-row');
-    predictionList.appendChild(currentRow);
-
-    names.forEach((name, index) => {
-        if (index > 0 && index % maxItemsPerRow === 0) {
-            currentRow = document.createElement('div');
-            currentRow.classList.add('prediction-row');
-            predictionList.appendChild(currentRow);
-        }
-
-        const listItem = document.createElement('li');
-        listItem.textContent = `${name}: xx%`; // Placeholder for confidence
-        currentRow.appendChild(listItem);
-    });
+    // Initialize the worker to listen for detections
+    const worker = new Worker('worker.js');
+    worker.onmessage = function (e) {
+        const { detections } = e.data;
+        console.log('Detections received from worker:', detections);
+        updatePredictions(detections);
+    };
 }
 
-// Display the class names when the DOM content is loaded
-document.addEventListener('DOMContentLoaded', displayNames);
+// Initialize the display names when the DOM content is loaded
+document.addEventListener('DOMContentLoaded', initializeDisplayNames);
