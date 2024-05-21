@@ -65,6 +65,14 @@ def create_app(project_name):
     def index():
         return render_template('index.html')
 
+    @app.route('/get_project_name')
+    def get_project_name():
+        return jsonify(project_name=project_name)
+
+    @app.route('/data/<path:filename>')
+    def serve_data(filename):
+        return send_from_directory('../data', filename)
+
     @app.route('/artefacts/<path:filename>')
     def serve_artefacts(filename):
         return send_from_directory('artefacts', filename)
@@ -116,6 +124,8 @@ def create_app(project_name):
                     confidence = box.conf[0].item()
                     class_id = box.cls[0].item()
                     detections.append([x1, y1, x2, y2, confidence, class_id])
+                    print(
+                        f"Detection: x1={x1}, y1={y1}, x2={x2}, y2={y2}, confidence={confidence}, class_id={class_id}")
         else:
             if hasattr(results, 'boxes') and hasattr(results.boxes, 'xyxy'):
                 for box in results.boxes:
@@ -123,6 +133,8 @@ def create_app(project_name):
                     confidence = box.conf[0].item()
                     class_id = box.cls[0].item()
                     detections.append([x1, y1, x2, y2, confidence, class_id])
+                    print(
+                        f"Detection: x1={x1}, y1={y1}, x2={x2}, y2={y2}, confidence={confidence}, class_id={class_id}")
 
         postprocessing_time = time.time()
         print(f"Postprocessing Time: {postprocessing_time - inference_end_time} seconds")

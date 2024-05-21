@@ -17,14 +17,18 @@ navigator.mediaDevices.getUserMedia({ video: true })
         console.error('Error accessing webcam:', error);
     });
 
+// Load the class names for the detected objects
 const worker = new Worker('worker.js');
 let detectionInterval = 80;
 
+// Receive the detected objects from the worker
 worker.onmessage = function (e) {
     const { detections } = e.data;
+    console.log('Detections received from worker:', detections);
     displayDetections(detections);
 };
 
+// Function to detect objects in the webcam video stream
 async function detectObjects() {
     const startTime = performance.now();
 
@@ -34,31 +38,72 @@ async function detectObjects() {
         return;
     }
 
+    // Match overlay canvas size with the video element size
+    overlayCanvas.width = webcamElement.videoWidth;
+    overlayCanvas.height = webcamElement.videoHeight;
+
+    // Match capture canvas size with the video element size
     captureCanvas.width = webcamElement.videoWidth;
     captureCanvas.height = webcamElement.videoHeight;
     captureContext.drawImage(webcamElement, 0, 0, captureCanvas.width, captureCanvas.height);
 
+    // Convert the capture canvas to an ImageBitmap
     const imageBitmap = await createImageBitmap(captureCanvas);
 
+    // Send the ImageBitmap to the worker for object detection
     worker.postMessage({ imageBitmap }, [imageBitmap]);
 
+    // Measure the time taken for detection
     const endTime = performance.now();
     console.log(`Detection took ${endTime - startTime} milliseconds`);
 
+    // Adjust the detection interval based on the time taken
     detectionInterval = Math.max(100, endTime - startTime);
     clearInterval(intervalId);
     intervalId = setInterval(detectObjects, detectionInterval);
 }
 
+// Function to display the detected objects on the overlay canvas
 function displayDetections(detections) {
     context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
+    // Get the dimensions of the overlay canvas
+    const canvasWidth = overlayCanvas.width;
+    const canvasHeight = overlayCanvas.height;
+
+    // Loop through the detected objects and draw boxes around them with the class names inside
     detections.forEach(detection => {
-        const [x1, y1, x2, y2] = detection;
+        let [x1, y1, x2, y2, confidence, classId] = detection;
+
+        // Scale the coordinates based on the canvas size
+        x1 = x1 / 640 * canvasWidth;
+        y1 = y1 / 640 * canvasHeight;
+        x2 = x2 / 640 * canvasWidth;
+        y2 = y2 / 640 * canvasHeight;
+
+        // Get the class name for the detected object
+        const className = classNames[classId];
+
+        // Draw the bounding box around the detected object
+        console.log(`Drawing box: x1=${x1}, y1=${y1}, x2=${x2}, y2=${y2}, confidence=${confidence}, classId=${classId}`);
         context.strokeStyle = 'red';
-        context.lineWidth = 2;
+        context.lineWidth = 5;
         context.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+        // Measure the width of the text to scale the background dynamically
+        context.font = '52px Arial';
+        const textWidth = context.measureText(className).width;
+        const textHeight = 53; // Height of the text background
+
+        // Draw black rectangle for text background at the bottom left of the bounding box
+        context.fillStyle = 'black';
+        context.fillRect(x1, y2 - textHeight, textWidth + 10, textHeight);
+
+        // Draw the class name inside the bounding box
+        context.fillStyle = 'white';
+        context.fillText(className, x1 + 5, y2 - 5);
     });
 }
 
+// Start detecting objects
 let intervalId = setInterval(detectObjects, detectionInterval);
