@@ -1,6 +1,3 @@
-# Description: This script creates a Flask web application that serves a web page for uploading an image and detecting
-# objects in it using a YOLOv8 model. The model is loaded from the latest checkpoint file in the specified project.
-
 from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 import cv2
@@ -136,11 +133,10 @@ def create_app(project_name):
                     print(
                         f"Detection: x1={x1}, y1={y1}, x2={x2}, y2={y2}, confidence={confidence}, class_id={class_id}")
 
-        postprocessing_time = time.time()
-        print(f"Postprocessing Time: {postprocessing_time - inference_end_time} seconds")
+        total_time = inference_end_time - start_time
+        print(f"\033[92mTotal Time: {total_time} seconds\033[0m")
 
-        total_time = postprocessing_time - start_time
-        print(f"Total Time: {total_time} seconds")
+        print(detections)
 
         return jsonify(detections)
 
