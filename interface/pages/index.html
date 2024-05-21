@@ -10,9 +10,14 @@
 <body>
     <header>
         <div class="header-content">
-            <img src="../artefacts/LogoZUYD.png" alt="Zuyd Hogeschool Logo" class="logo">
+            <img src="../artefacts/LogoZUYD.svg" alt="Zuyd Hogeschool Logo" class="logo">
             <h1>YOLO Continual Learning</h1>
-            <h1> </h1>
+            <div>
+                <button id="project-button">Project</button>
+                <a href="https://github.com/Siverty/YoloCL" target="_blank">
+                    <button id="git-button">Git </button>
+                </a>
+            </div>
         </div>
     </header>
     <div class="container">
@@ -33,11 +38,19 @@
             </div>
         </div>
     </div>
+    <div id="project-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>What project do you want to select?</h2>
+            <div id="project-list"></div>
+        </div>
+    </div>
     <footer>
         <p>&copy; Justin Schots - Lectoraat Data Intelligence Zuyd</p>
     </footer>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="../code/webcam.js"></script>
     <script src="../code/displayNames.js"></script>
+    <script src="../code/projectSelection.js"></script>
 </body>
 </html>
