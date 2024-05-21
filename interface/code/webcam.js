@@ -19,7 +19,7 @@ navigator.mediaDevices.getUserMedia({ video: true })
 
 // Load the class names for the detected objects
 const worker = new Worker('worker.js');
-let detectionInterval = 80;
+let detectionInterval = 70;
 
 // Receive the detected objects from the worker
 worker.onmessage = function (e) {
