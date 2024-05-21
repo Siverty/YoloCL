@@ -81,7 +81,7 @@ function displayDetections(detections) {
         x2 = x2 / 640 * canvasWidth;
         y2 = y2 / 640 * canvasHeight;
 
-        // Get the class name for the detected object
+        // Get the class name for the detected object from the classNames array in displayNames.js
         const className = classNames[classId];
 
         // Draw the bounding box around the detected object
