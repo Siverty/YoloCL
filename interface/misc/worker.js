@@ -29,7 +29,7 @@ self.onmessage = async function (e) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
         } catch (error) {
-            console.error('Error during detection:', error);
+            console.error('Error during detection: ', error);
         }
     } else {
         console.error('Failed to create blob from canvas');
