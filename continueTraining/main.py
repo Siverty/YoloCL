@@ -2,17 +2,11 @@
 # It is used to split the data into training and validation sets and to further train the model.
 
 # Be sure to run this script in a .venv environment with the required packages installed.
-# The pytorch && CUDA installations will otherwise throw exotics errors.
+# The pytorch && CUDA installations will otherwise throw exotic errors.
 
 # Import the required packages
 import os
 import sys
-
-from install_requirements import install_requirements
-
-# Install the required packages
-# install_requirements("requirements.txt")
-
 
 # Continue the imports that are to be installed here:
 import mlflow
@@ -22,11 +16,8 @@ import time
 import requests
 
 # Import the required functions from the logic modules
-from continueTraining.logic.data_handler.trainValSplit import split_data
-from continueTraining.logic.cl_yolo_train import continue_training
-
-# Import the create_app function from app.py
-from interface.app import create_app
+from logic.data_handler.trainValSplit import split_data
+from logic.cl_yolo_train import continue_training
 
 # Select what project to use
 project = 'CHILL'
@@ -35,16 +26,16 @@ experiment_name = project + '_cl'
 # Set mlflow tracking URI
 mlflow.set_tracking_uri('http://localhost:8282')
 
-# Set the path to the weights file
+# Set the path to the weights' file
 root = os.getcwd()
 weights_dir = os.path.join(root, 'data', project, 'models')
 weights_path_continue_training = os.path.join(weights_dir, 'continue_training')
 
 # Constants
-amount_of_runs = 3
-epochs = 5
-repeats = 5     # Number of repeats of the same training process for addition of mlflow metrics
-# --The weights path is determined in the upcoming if-else statement -- #
+amount_of_runs = 1
+epochs = 1
+repeats = 1     # Number of repeats of the same training process for addition of mlflow metrics
+# --The weights' path is determined in the upcoming if-else statement -- #
 data_yaml = os.path.join(root, 'data', project, 'yaml-files', 'data.yaml')
 image_size = 640
 batch_size = 16
@@ -132,7 +123,7 @@ def fetch_parent_runs(experiment_id):
 
 def name_next_parent_run(experiment_id, base_name=f"Parent_{experiment_name}"):
     parent_runs = fetch_parent_runs(experiment_id)
-    next_index = len(parent_runs) + 1
+    next_index = len(parent_runs) // amount_of_runs
     return f"{base_name}_{next_index}", next_index
 
 
@@ -164,7 +155,7 @@ def train():
     if not continual_training:
         # Check for the newest weights otherwise use the default weights
         if os.listdir(weights_path_continue_training):
-            # If the continue_training directory has files, use the last modified file as the weights path
+            # If the continue_training directory has files, use the last modified file as the weights' path
             weights_path = max([os.path.join(weights_path_continue_training, f) for f in os.listdir(
                 weights_path_continue_training)], key=os.path.getmtime)
             print(f"Using weights from {weights_path}, so will train with this already further trained model.⏭")
@@ -181,7 +172,7 @@ def train():
             if continual_training:
                 # Check for the newest weights otherwise use the default weights
                 if os.listdir(weights_path_continue_training):
-                    # If the continue_training directory has files, use the last modified file as the weights path
+                    # If the continue_training directory has files, use the last modified file as the weights' path
                     weights_path = max([os.path.join(weights_path_continue_training, f) for f in os.listdir(
                         weights_path_continue_training)], key=os.path.getmtime)
                     print(f"Using weights from {weights_path}, so will train with this already further trained model.⏭")
@@ -219,12 +210,8 @@ if __name__ == "__main__":
     # Creating a new mlflow experiment if it does not exist
     create_mlflow_experiment()
 
-    # Start app.py
-    app = create_app(project)
-    app.run(host='0.0.0.0', port=5000)
-
     # # Training the model based on the existing weights with the new data
-    # train()
+    train()
 
     # Wait function to make this continual learning script run indefinitely
     # wait(0.1, 8200)

@@ -22,7 +22,7 @@ def continue_training(weights: str, data_yaml: str, image_size: int, batch_size:
     # Remove '_cl' from the experiment name
     new_name = experiment_name[:-3]
 
-    iteration_name = f"{new_name}_{parent_index}.{child_index}"  # CHILL_3.1, CHILL_3.2, etc.
+    iteration_name = f"{new_name}_{parent_index}.{child_index}"  # CHILL_1.1, CHILL_1.2, etc.
 
     with mlflow.start_run(experiment_id=experiment_id, run_name=iteration_name, nested=True):
         mlflow.log_params({
@@ -61,9 +61,12 @@ def continue_training(weights: str, data_yaml: str, image_size: int, batch_size:
             'batch': batch_size,
             'epochs': epochs,
             'save_period': checkpoint_interval,
-            'val': False,
+            'val': True, # Was False
             'pretrained': pretrained,
         }
+
+        # i will be used to keep track of the amount of repeats
+        i = 0
 
         # Train the model and log the parameters after each input
         for epoch in range(repeats):
@@ -73,12 +76,18 @@ def continue_training(weights: str, data_yaml: str, image_size: int, batch_size:
             # Enable system metrics logging in MLflow
             mlflow.enable_system_metrics_logging()
 
+            i += 1
+
             # Log metrics from results
             if hasattr(results, 'results_dict'):
                 # Renaming metrics with invalid characters
                 reshaped_results_dict = {metric.replace('(', '').replace(')', ''): value for metric, value in
                                          results.results_dict.items()}
                 mlflow.log_metrics(reshaped_results_dict, step=epoch)
+                print(reshaped_results_dict)
+
+            # Print the repeats for the user
+            print(f"🔁 Repeat {i} of {repeats} complete")
 
         # Save the trained model to the 'continue_training' directory
         save_dir = os.path.join(root, 'data', new_name, 'models', 'continue_training')
@@ -108,3 +117,6 @@ def continue_training(weights: str, data_yaml: str, image_size: int, batch_size:
 
         # Log the converted model to MLflow
         mlflow.pytorch.log_model(converted_model, new_model_name)
+
+        # Currently still not working
+        # mlflow.log_artifact(torch_model)
