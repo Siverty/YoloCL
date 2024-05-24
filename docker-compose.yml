@@ -1,6 +1,10 @@
-version: '3'
+version: '3.8'
+
+name: YOLOcl-CHIMP
+
 services:
   mlflow-server:
+    container_name: YOLOcl-MLflow-server
     build:
       context: ./mlflow
       dockerfile: Dockerfile
@@ -10,11 +14,21 @@ services:
       - MLFLOW_TRACKING_URI=http://localhost:8282
     volumes:
       - ./mlruns:/mlflow/mlflow-artifacts
-  app:
-    build: ./app
-    environment:
-      - MLFLOW_TRACKING_URI=http://mlflow-server:8282
-    depends_on:
-      - mlflow-server
+
+  continue-training:
+    container_name: YOLOcl-Expirimentation-server
+    build:
+      context: ./continueTraining
+      dockerfile: Dockerfile
+    volumes:
+      - ./continueTraining:/app
+
+  interface:
+    container_name: YOLOcl-FrontEnd-server
+    build:
+      context: ./interface
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
+    volumes:
+      - ./interface:/app
