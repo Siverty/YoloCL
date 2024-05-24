@@ -1,6 +1,7 @@
 {
   "projects": {
     "CHILL": {
+      "project": "CHILL",
       "experiment_name": "CHILL_cl",
       "weights_dir": "data/CHILL/models",
       "weights_path_continue_training": "data/CHILL/models/continue_training",
@@ -14,6 +15,7 @@
       "mlflow_tracking_uri": "http://localhost:8282"
     },
     "P&ID_recognition": {
+      "project": "P&ID",
       "experiment_name": "PID_recognition_cl",
       "weights_dir": "data/PID_recognition/models",
       "weights_path_continue_training": "data/PID_recognition/models/continue_training",
