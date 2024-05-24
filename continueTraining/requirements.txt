@@ -1,0 +1,8 @@
+python-dotenv
+pandas
+ultralytics
+scikit-learn
+mlflow
+Docker
+requests
+pynvml
