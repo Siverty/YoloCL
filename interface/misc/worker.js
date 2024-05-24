@@ -1,3 +1,6 @@
+// Description: Web worker script that sends video frames to the server for object detection.
+
+// Receive messages from webcam.js
 self.onmessage = async function (e) {
     const { imageBitmap } = e.data;
 
@@ -16,12 +19,14 @@ self.onmessage = async function (e) {
         const formData = new FormData();
         formData.append('image', blob, 'frame.jpg');
 
+        // Send the blob to the server for object detection
         try {
             const response = await fetch('http://localhost:5000/detect', {
                 method: 'POST',
                 body: formData,
             });
 
+            // Receive the detected objects from the server
             if (response.ok) {
                 const detections = await response.json();
                 self.postMessage({ detections });

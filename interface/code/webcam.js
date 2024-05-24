@@ -1,3 +1,5 @@
+// Description: JavaScript code for accessing the webcam and detecting objects in the video stream.
+
 // Wait until classNames is populated before starting detection
 const checkClassNamesInterval = setInterval(() => {
     if (classNames.length > 0) {
@@ -9,6 +11,7 @@ const checkClassNamesInterval = setInterval(() => {
     }
 }, 100);
 
+// Function to start detecting objects in the webcam video stream
 function startWebcamDetection() {
     // Get access to the webcam video element
     const webcamElement = document.getElementById('webcam');
@@ -66,6 +69,7 @@ function startWebcamDetection() {
         // Send the ImageBitmap to the worker for object detection
         worker.postMessage({ imageBitmap }, [imageBitmap]);
 
+        // Measure the time taken for detection and log it
         const endTime = performance.now();
         const processingTime = endTime - startTime;
         console.log(`Detection processing time: ${processingTime.toFixed(2)} ms`);
